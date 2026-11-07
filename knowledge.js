@@ -121,8 +121,8 @@
       const ay=p.y*scale+(va.labelHeight-6)/2,by=q.y*scale+(vb.labelHeight-6)/2;
       const oy=(va.labelHeight+vb.labelHeight)/2+38-Math.abs(ay-by);
       if(ox>0&&oy>0){
-        if(ox<oy){const push=ox/scale*.035*(dx>=0?1:-1);if(!p.pinned)p.vx+=push;if(!q.pinned)q.vx-=push;}
-        else {const push=oy/scale*.035*(ay>=by?1:-1);if(!p.pinned)p.vy+=push;if(!q.pinned)q.vy-=push;}
+        if(ox<oy){const push=ox/scale*.13*(dx>=0?1:-1);if(!p.pinned)p.vx+=push;if(!q.pinned)q.vx-=push;}
+        else {const push=oy/scale*.13*(ay>=by?1:-1);if(!p.pinned)p.vy+=push;if(!q.pinned)q.vy-=push;}
       }
     }
     list.forEach(id=>{const p=view.positions.get(id);if(p.pinned)return;p.vx*=.72;p.vy*=.72;p.x+=p.vx;p.y+=p.vy;const visual=view.nodes.get(id),mx=Math.max(.1,(view.w/2-visual.labelWidth/2-10)/scale),minY=(-view.h/2+22)/scale,maxY=(view.h/2-visual.labelHeight-23)/scale;p.x=Math.max(-mx,Math.min(mx,p.x));p.y=Math.max(minY,Math.min(maxY,p.y));});
