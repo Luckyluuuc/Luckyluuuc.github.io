@@ -15,11 +15,12 @@
   }
   function updateMotion() {
     document.body.classList.toggle('motion-paused', paused);
-    $('#motion').textContent = paused ? '▷' : 'Ⅱ';
+    const motionIcon = paused ? '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 8 6-8 6Z"/></svg>' : '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 5v10M13 5v10"/></svg>';
+    $('#motion').innerHTML = motionIcon;
     $('#motion').setAttribute('aria-pressed', String(paused));
     const label = lang === 'fr' ? (paused ? 'Reprendre les animations' : 'Mettre les animations en pause') : (paused ? 'Resume animations' : 'Pause animations');
     $('#motion').setAttribute('aria-label', label);
-    $('#map-motion').textContent = paused ? '▷' : 'Ⅱ';
+    $('#map-motion').innerHTML = motionIcon;
     $('#map-motion').setAttribute('aria-pressed', String(paused));
     $('#map-motion').setAttribute('aria-label', label);
     $('#footer-motion').textContent = label;
