@@ -33,7 +33,7 @@
     $('nav').setAttribute('aria-label', lang === 'fr' ? 'Navigation principale' : 'Main navigation');
     document.title = lang === 'fr' ? 'Luc Brun — Recherche & sécurité des agents IA' : 'Luc Brun — AI Safety & Agent Research';
     $('meta[name="description"]').content = lang === 'fr' ? 'Luc Brun, doctorant en sécurisation et alignement des agents IA en environnement logiciel. Recherche, publication, projets et parcours.' : 'Luc Brun, PhD candidate working on the safety and alignment of AI agents in software environments. Research, publications, projects and experience.';
-    $$('a[href*="Luc-Brun-CV"]').forEach(a => { a.href = lang === 'fr' ? './Luc-Brun-CV-FR.pdf' : './Luc-Brun-CV.pdf'; });
+    $$('a[href*="Luc-Brun-CV"]').forEach(a => { a.href = './Luc-Brun-CV.pdf?v=20261107-polish'; });
     updateCount(); updateMotion(); write('luc-language', lang);
     window.dispatchEvent(new Event('luc:language'));
   }

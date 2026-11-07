@@ -12,6 +12,11 @@
   const graphDialog=$('#network-dialog'),paperDialog=$('#paper-dialog');
   let selected='luc',mode='local',trail=['luc'],hover=null,opener=null,frame=0,running=false,last=0,tick=0,inlineVisible=true;
   const views=[];
+  const measureContext=document.createElement('canvas').getContext('2d');
+  function textWidth(value){
+    if(measureContext){measureContext.font='500 13px "DM Sans", sans-serif';const metrics=measureContext.measureText(value);if(metrics&&Number.isFinite(metrics.width))return metrics.width;}
+    return value.length*7;
+  }
   function svg(tag,attrs={}){const el=document.createElementNS(NS,tag);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,String(v)));return el;}
   function makeView(host,full){
     const root=svg('svg',{role:'group','aria-label':tr('Interactive knowledge graph','Graphe de connaissances interactif')});
@@ -26,9 +31,9 @@
     });
     data.nodes.forEach((node,index)=>{
       const g=svg('g',{'class':'kg-node kg-'+node.kind,'data-node':node.id,role:'button',tabindex:-1,'aria-pressed':'false'});
-      const hit=svg('circle',{r:17,'class':'kg-hit'}),halo=svg('circle',{r:15,'class':'kg-halo'}),dot=svg('circle',{r:5,'class':'kg-dot'}),label=svg('text',{'text-anchor':'middle',y:20,'class':'kg-label'}),title=svg('title');
-      g.append(hit,halo,dot,label,title);nodes.append(g);
-      view.nodes.set(node.id,{g,dot,halo,label,title});
+      const hit=svg('circle',{r:17,'class':'kg-hit'}),halo=svg('circle',{r:15,'class':'kg-halo'}),dot=svg('circle',{r:5,'class':'kg-dot'}),plate=svg('rect',{'class':'kg-label-plate',rx:5}),label=svg('text',{'text-anchor':'middle',y:26,'class':'kg-label'}),title=svg('title');
+      g.append(hit,halo,dot,plate,label,title);nodes.append(g);
+      view.nodes.set(node.id,{g,dot,halo,plate,label,title,labelWidth:96,labelHeight:38});
       const angle=index*2.39996;view.positions.set(node.id,{x:Math.cos(angle)*.75,y:Math.sin(angle)*.75,gx:0,gy:0,vx:0,vy:0,pinned:false});
       let moved=false;
       g.addEventListener('click',()=>{if(moved){moved=false;return;}choose(node.id);});
@@ -71,11 +76,14 @@
     view.scale=Math.min((view.w-100)/2,(view.h-75)/2);view.root.setAttribute('viewBox',`0 0 ${view.w} ${view.h}`);
   }
   function labels(view){
-    view.nodes.forEach(({g,dot,label,title},id)=>{
+    view.nodes.forEach((visual,id)=>{
+      const {g,dot,plate,label,title}=visual;
       const node=byId.get(id),name=text(node),neighbours=adjacent.get(id).length;
       label.replaceChildren();
-      const words=name.split(' '),lines=[''];words.forEach(word=>{const i=lines.length-1;if((lines[i]+' '+word).trim().length>17&&lines[i]&&lines.length<2)lines.push(word);else lines[i]+=(lines[i]?' ':'')+word;});
-      lines.forEach((line,i)=>{const span=svg('tspan',{x:0,dy:i?'1.15em':'0'});span.textContent=line;label.append(span);});
+      const words=name.split(' '),lines=[''];words.forEach(word=>{const i=lines.length-1;if(textWidth((lines[i]+' '+word).trim())>94&&lines[i]&&lines.length<2)lines.push(word);else lines[i]+=(lines[i]?' ':'')+word;});
+      lines.forEach((line,i)=>{const span=svg('tspan',{x:0,dy:i?'1.2em':'0'});span.textContent=line;label.append(span);});
+      visual.labelWidth=Math.max(...lines.map(textWidth))*1.08+16;visual.labelHeight=lines.length*15.6+9;
+      plate.setAttribute('x',-visual.labelWidth/2);plate.setAttribute('y',12);plate.setAttribute('width',visual.labelWidth);plate.setAttribute('height',visual.labelHeight);
       title.textContent=name+' · '+neighbours+' '+tr('connections','connexions');
       g.setAttribute('aria-label',title.textContent);dot.setAttribute('r',id==='luc'?8:Math.min(7,3.5+neighbours*.35));
     });
@@ -108,10 +116,16 @@
       const distance=Math.max(.012,dx*dx+dy*dy),force=.00075/distance;
       if(!p.pinned){p.vx+=dx*force;p.vy+=dy*force;}if(!q.pinned){q.vx-=dx*force;q.vy-=dy*force;}
       // Labels receive space as well as the circular nodes.
-      const ox=Math.abs(dx)*scale,oy=Math.abs(dy)*scale;
-      if(ox<79&&oy<36){const push=(36-oy)/scale*.012,sign=dy>=0?1:-1;if(!p.pinned)p.vy+=sign*push;if(!q.pinned)q.vy-=sign*push;}
+      const va=view.nodes.get(list[a]),vb=view.nodes.get(list[b]);
+      const ox=(va.labelWidth+vb.labelWidth)/2+12-Math.abs(dx)*scale;
+      const ay=p.y*scale+(va.labelHeight-6)/2,by=q.y*scale+(vb.labelHeight-6)/2;
+      const oy=(va.labelHeight+vb.labelHeight)/2+38-Math.abs(ay-by);
+      if(ox>0&&oy>0){
+        if(ox<oy){const push=ox/scale*.035*(dx>=0?1:-1);if(!p.pinned)p.vx+=push;if(!q.pinned)q.vx-=push;}
+        else {const push=oy/scale*.035*(ay>=by?1:-1);if(!p.pinned)p.vy+=push;if(!q.pinned)q.vy-=push;}
+      }
     }
-    list.forEach(id=>{const p=view.positions.get(id);if(p.pinned)return;p.vx*=.72;p.vy*=.72;p.x+=p.vx;p.y+=p.vy;const mx=(view.w/2-43)/scale,my=(view.h/2-34)/scale;p.x=Math.max(-mx,Math.min(mx,p.x));p.y=Math.max(-my,Math.min(my,p.y));});
+    list.forEach(id=>{const p=view.positions.get(id);if(p.pinned)return;p.vx*=.72;p.vy*=.72;p.x+=p.vx;p.y+=p.vy;const visual=view.nodes.get(id),mx=Math.max(.1,(view.w/2-visual.labelWidth/2-10)/scale),minY=(-view.h/2+22)/scale,maxY=(view.h/2-visual.labelHeight-23)/scale;p.x=Math.max(-mx,Math.min(mx,p.x));p.y=Math.max(minY,Math.min(maxY,p.y));});
   }
   function paintView(view){
     if(view.full&&!graphDialog.open)return;
@@ -119,7 +133,7 @@
     const neighbours=new Set(adjacent.get(selected).map(x=>x.id)),focus=hover||selected;
     view.nodes.forEach(({g,dot,halo,label},id)=>{
       if(!view.visible.has(id))return;const p=view.positions.get(id),isSelected=id===selected,near=neighbours.has(id);
-      g.setAttribute('transform',`translate(${p.x} ${p.y}) scale(${1/(view.scale*view.zoom)})`);
+      g.setAttribute('transform',`translate(${p.x} ${p.y}) scale(${1/view.scale})`);
       g.classList.toggle('kg-selected',isSelected);g.classList.toggle('kg-related',near);g.classList.toggle('kg-dim',!near&&!isSelected);g.classList.toggle('kg-hovered',hover===id);g.setAttribute('aria-pressed',String(isSelected));
       halo.setAttribute('r',isSelected?16:12);
     });
@@ -236,4 +250,5 @@
   addEventListener('resize',resize,{passive:true});document.addEventListener('visibilitychange',()=>{if(!document.hidden)start();});
   if('IntersectionObserver' in window){const observer=new IntersectionObserver(entries=>{inlineVisible=entries[0].isIntersecting;if(inlineVisible)start();});observer.observe(inline.host);}
   views.forEach(size);localize();views.forEach(view=>layout(view,true));paint();start();
+  if(document.fonts?.ready)document.fonts.ready.then(()=>{views.forEach(labels);views.forEach(view=>layout(view,reduce()));paint();start();});
 })();
