@@ -8,7 +8,7 @@ Open `index.html` in a modern browser. No build step, dependencies or backend ar
 
 ## GitHub Pages
 
-The workflow `.github/workflows/pages.yml` publishes the static website after each push to `main`. Select **Settings → Pages → Source → GitHub Actions** once to enable it. Keep all assets alongside `index.html`. Relative URLs also support project-site deployment.
+Select **Settings → Pages → Source → Deploy from a branch**, then choose **main** and **/(root)**. The site is static and requires no custom Actions workflow or build step. Keep `.nojekyll` and all assets alongside `index.html`. Relative URLs also support project-site deployment.
 
 ## Files
 
